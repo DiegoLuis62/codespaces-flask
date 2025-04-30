@@ -1,0 +1,36 @@
+### GET - Check if the server is running
+GET http://localhost:6000/
+Accept: application/json
+
+
+### POST - Send test data to predict heart attack
+POST http://localhost:6000/predecir
+Content-Type: application/json
+
+{
+  "Sex": "Male",
+  "GeneralHealth": "Very good",
+  "PhysicalHealthDays": 2,
+  "MentalHealthDays": 1,
+  "PhysicalActivities": "Yes",
+  "SleepHours": 7,
+  "HadAngina": "No",
+  "HadStroke": "No",
+  "HadAsthma": "No",
+  "HadSkinCancer": "No",
+  "HadCOPD": "No",
+  "HadDepressiveDisorder": "No",
+  "HadKidneyDisease": "No",
+  "HadArthritis": "No",
+  "HadDiabetes": "No",
+  "DifficultyWalking": "No",
+  "SmokerStatus": "Never smoked",
+  "ECigaretteUsage": "No",
+  "RaceEthnicityCategory": "White",
+  "AgeCategory": "45-49",
+  "BMI": 23.5,
+  "AlcoholDrinkers": "Yes",
+  "TetanusLast10Tdap": "Yes"
+}
+
+

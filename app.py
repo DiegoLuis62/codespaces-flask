@@ -1,26 +1,20 @@
 from flask import Flask, request, jsonify
-import pickle
-from Utils.predictor import predecir_ataque_corazon
+from joblib import load
+import lightgbm as lgb
+import pandas as pd
+import json
+from Utils.predictor import predecir_ataque_corazon  # Verifica si esta función está bien definida
 
 # Cargar el modelo
-with open('modelo/modelo_entrenado.pkl', 'rb') as f:
-    modelo = pickle.load(f)
+modelo = load("modelo/modelo_entrenado.pkl")  # Usamos joblib para cargar el modelo
 
-# Definir columnas
-columnas_modelo = [
-    'Sex', 'AgeCategory', 'GeneralHealth', 'PhysicalHealthDays', 'MentalHealthDays', 'BMI',
-    'HadAngina', 'HadStroke', 'HadAsthma', 'HadCOPD', 'HadDiabetes',
-    'HadKidneyDisease', 'HadArthritis', 'SmokerStatus', 'ECigaretteUsage',
-    'AlcoholDrinkers', 'PhysicalActivities', 'SleepHours', 'HadDepressiveDisorder',
-    'HadSkinCancer', 'DifficultyWalking'
-]
+# Cargar columnas del modelo
+with open("modelo/columnas_entradas.json", "r") as f:
+    columnas_modelo = json.load(f)
 
-columnas_categoricas = [
-    'Sex', 'AgeCategory', 'GeneralHealth', 'HadAngina', 'HadStroke',
-    'HadAsthma', 'HadCOPD', 'HadDiabetes', 'HadKidneyDisease', 'HadArthritis',
-    'SmokerStatus', 'ECigaretteUsage', 'AlcoholDrinkers', 'PhysicalActivities',
-    'HadDepressiveDisorder', 'HadSkinCancer', 'DifficultyWalking'
-]
+# Cargar columnas categóricas del modelo
+with open("modelo/columnas_categoricas.json", "r") as f:
+    columnas_categoricas = json.load(f)
 
 # Crear app Flask
 app = Flask(__name__)
@@ -37,11 +31,23 @@ def predecir():
         return jsonify({'error': 'No enviaste datos'}), 400
 
     try:
-        prediccion, probabilidad = predecir_ataque_corazon(modelo, datos, columnas_modelo, columnas_categoricas)
+        # Convertimos los datos JSON en un DataFrame
+        df_datos = pd.DataFrame([datos])
+        
+        # Reordenamos las columnas y llenamos faltantes con None
+        df_datos = df_datos.reindex(columns=columnas_modelo, fill_value=None)
+        
+        # Aseguramos que las columnas categóricas estén bien definidas
+        for col in columnas_categoricas:
+            df_datos[col] = df_datos[col].astype('category')
+
+        # Realizar la predicción
+        prediccion = modelo.predict(df_datos)
+        probabilidad = modelo.predict_proba(df_datos)[:, 1]  # Probabilidad clase 1 (riesgo)
 
         return jsonify({
-            'resultado': 'Riesgo de Ataque' if prediccion == 'Yes' else 'Sin Riesgo',
-            'probabilidad': round(probabilidad * 100, 2)
+            'resultado': 'Riesgo de Ataque' if prediccion[0] == 1 else 'Sin Riesgo',
+            'probabilidad': round(probabilidad[0] * 100, 2)
         })
 
     except Exception as e:
